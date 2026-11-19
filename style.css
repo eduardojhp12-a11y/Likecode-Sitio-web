@@ -171,6 +171,9 @@ nav a:active{background:rgba(34,211,238,.2);transform:scale(.97)}
 .tm{text-align:center}
 .av{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;font:800 1.4rem var(--h);color:var(--ink);background:linear-gradient(135deg,var(--acc),var(--ac2))}
 .tm small{color:var(--link);font-weight:500;display:block;margin-bottom:8px}
+.tm-social{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.tm-social .btn{font-size:.8rem;padding:9px 16px}
+.tm-placeholder{min-height:220px}
 .fq{display:grid;grid-template-columns:.8fr 1.2fr;gap:48px}
 @media(max-width:900px){.fq{grid-template-columns:1fr}}
 details{background:#fff;border:1px solid var(--ln);border-radius:12px;padding:16px 20px;margin-bottom:10px}
