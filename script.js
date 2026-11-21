@@ -26,6 +26,9 @@ var T=[
 ];
 var $=function(i){return document.getElementById(i)};
 document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){var q=a.href.indexOf('?');a.href='https://wa.me/'+WA+(q>-1?a.href.slice(q):'')});
+// ubicación de la agencia (mapa de Google): cambia solo esta línea por la dirección real
+var LOC='J98J+X3J, Maracaibo 4001, Zulia, Venezuela';
+(function(){var q=encodeURIComponent(LOC);$('lm').src='https://www.google.com/maps?q='+q+'&output=embed';$('ld').href='https://www.google.com/maps/search/?api=1&query='+q;$('la').textContent=LOC})();
 // tarjetas de servicios
 function card(s,i){return '<a class="sc rv" href="#servicio-'+s.id+'" style="--g1:'+s.g[0]+';--g2:'+s.g[1]+'"><span class="ico">'+sv(s.k)+'</span><em class="nm">'+(i<9?'0':'')+(i+1)+'</em><h3>'+s.n+'</h3><small>'+s.t+'</small><p>'+s.s+'</p><b>Conocer más <i>→</i></b></a>'}
 function cards(n){return S.slice(0,n||S.length).map(card).join('')}
@@ -44,7 +47,7 @@ function page(s){
   '<h3 class="mh">Qué incluye</h3><div class="fx">'+s.i.map(function(x,j){return '<div class="fe rv d'+(j%4)+'"><b>0'+(j+1)+'</b><span>'+x+'</span></div>'}).join('')+'</div>'+
   '<h3 class="mh">Cómo lo hacemos</h3><ol class="s3"><li class="rv"><b>Diagnóstico</b><span>Entendemos tu negocio y lo que necesitas.</span></li><li class="rv d1"><b>Desarrollo</b><span>Lo construimos y te mostramos avances.</span></li><li class="rv d2"><b>Entrega y soporte</b><span>Lo lanzamos, te capacitamos y te acompañamos 24/7.</span></li></ol>'+
   '<div class="id rv"><b>Ideal si</b> '+s.o+'</div></div>'+
-  '<aside class="asd"><div class="ah" style="'+gs+'">'+sv(s.k)+'<span>'+s.n+'</span></div><div class="ab"><p>Cuéntanos tu caso y recibe un presupuesto sin compromiso.</p><a class="btn c" href="#cotizar">Cotizar este servicio</a><a class="btn g" href="https://wa.me/'+WA+'" target="_blank" rel="noopener">Hablar por WhatsApp</a><a class="lk" href="#contacto">Solicitar diagnóstico gratis →</a></div></aside></div></section>'+
+  '<aside class="asd"><div class="ah" style="'+gs+'">'+sv(s.k)+'<span>'+s.n+'</span></div><div class="ab"><p>Cuéntanos tu caso y recibe un presupuesto sin compromiso.</p><a class="btn c" href="#cotizar" data-svc="'+s.id+'">Cotizar este servicio</a><a class="btn g" href="https://wa.me/'+WA+'" target="_blank" rel="noopener">Hablar por WhatsApp</a><a class="lk" href="#contacto">Solicitar diagnóstico gratis →</a></div></aside></div></section>'+
   '<section class="sec related-services"><div class="w"><div class="eb rv">Otros servicios</div><h2 class="rv">Más soluciones para tu empresa</h2><p class="lead rv">Explora otros servicios y encuentra la opción adecuada para tu negocio.</p><div class="sg">'+rest.map(function(x){return card(x,S.indexOf(x))}).join('')+'</div></div></section>';
 }
 // observador: revelar y contar
@@ -72,29 +75,46 @@ nv.onclick=function(e){if(e.target.closest('a'))menu(false)};
 scr.onclick=function(){menu(false)};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')menu(false)});
 addEventListener('resize',function(){if(innerWidth>960)menu(false)});
-// cotizador
-var Q=[{t:'¿Qué necesitas?',k:'need',m:0,o:[['Página web','Que te encuentren en internet'],['Tienda en línea','Vender tus productos'],['Sistema a la medida','Organizar tu empresa'],['Mejorar lo que tengo','Arreglos o cambios']]},
-{t:'¿Quién lo va a usar?',k:'who',m:0,o:[['Solo yo',''],['Mi equipo','De 2 a 10 personas'],['Toda la empresa','Más de 10 personas'],['Mis clientes','También lo usarán']]},
-{t:'¿Qué te gustaría que haga?',k:'feat',m:1,o:[['Cobrar en línea',''],['Inventario',''],['Facturas',''],['Citas o reservas',''],['Reportes',''],['Avisos por WhatsApp','']]},
-{t:'¿Para cuándo lo necesitas?',k:'when',m:0,o:[['Lo antes posible',''],['En uno o dos meses',''],['Lo estoy pensando','']]}];
-var A={need:[],who:[],feat:[],when:[]},s=0,wb=$('wb'),nt=$('nt'),bk=$('bk');
+// cotizador: los pasos cambian según los servicios que elija la persona
+var SN=S.map(function(x){return x.n}),WT=[1,2,3,3,3,1,2,0,0,1,1,1],SWN=SN.slice(0,7);
+var Q=[
+{k:'svc',t:'¿Qué servicios necesitas?',m:1,req:1,h:' · Elige todos los que necesites',g:G.map(function(g){return [g[0],g[2].map(function(i){return [S[i].n,S[i].t]})]}).concat([['¿No sabes por dónde empezar?',[['Quiero asesoría','Te ayudamos a elegir']]]])},
+{k:'size',t:'¿De qué tamaño es tu empresa?',m:0,o:[['Soy independiente','Trabajo por mi cuenta'],['Empresa pequeña','De 2 a 10 personas'],['Empresa mediana','De 11 a 50 personas'],['Empresa grande','Más de 50 personas']]},
+{k:'feat',t:'¿Qué te gustaría que haga?',m:1,h:' · Elige todas las que quieras',only:function(){return !A.svc.length||A.svc.some(function(n){return SWN.indexOf(n)>-1})},o:[['Cobrar en línea',''],['Catálogo de productos',''],['Inventario',''],['Facturas',''],['Citas o reservas',''],['Reportes',''],['Avisos por WhatsApp',''],['Usuarios y permisos',''],['Acceso para mis clientes',''],['Conectar con otros sistemas',''],['Asistente con IA','']]},
+{k:'base',t:'¿Ya tienes algo hecho?',m:0,o:[['No, empiezo desde cero','Es un proyecto nuevo'],['Sí, quiero mejorarlo','Ya tengo página, sistema o equipos'],['Es algo urgente','Necesito ayuda cuanto antes']]},
+{k:'when',t:'¿Para cuándo lo necesitas?',m:0,o:[['Lo antes posible',''],['En uno o dos meses',''],['Lo estoy pensando','']]}];
+function fresh(){return {svc:[],size:[],feat:[],base:[],when:[]}}
+var A=fresh(),s=0,wb=$('wb'),nt=$('nt'),bk=$('bk'),wz=document.querySelector('.wz');
+function steps(){return Q.filter(function(q){return !q.only||q.only()})}
+function flat(q){return q.g?q.g.reduce(function(a,g){return a.concat(g[1])},[]):q.o}
+function ok(q){return (q.m&&!q.req)||A[q.k].length>0}
+function head(L){var q=L[s],n=L.length;$('pg').style.width=Math.min((s+1)/n,1)*100+'%';$('sp').textContent='Pregunta '+(s+1)+' de '+n+(q.m?q.h:'')}
 function draw(){
-  $('pg').style.width=Math.min((s+1)/4,1)*100+'%';
-  if(s>=4){
-    var sc=(A.need[0]==='Sistema a la medida'?3:A.need[0]==='Tienda en línea'?2:1)+(A.who[0]==='Toda la empresa'||A.who[0]==='Mis clientes'?1:0)+(A.feat.length>3?2:A.feat.length>1?1:0),sz=sc>=5?'Grande':sc>=3?'Mediano':'Pequeño',ft=A.feat.join(', ')||'Por definir';
+  var L=steps(),n=L.length;
+  $('pg').style.width=Math.min((s+1)/n,1)*100+'%';
+  bk.style.visibility=s===0?'hidden':'';
+  if(s>=n){
+    var sw=L.some(function(q){return q.k==='feat'}),
+    sc=A.svc.reduce(function(a,x){var i=SN.indexOf(x);return a+(i>-1?WT[i]:0)},0)+({'Empresa mediana':1,'Empresa grande':2}[A.size[0]]||0)+(sw?(A.feat.length>5?2:A.feat.length>2?1:0):0),
+    sz=A.svc.some(function(x){return SN.indexOf(x)>-1})?(sc>=7?'Grande':sc>=3?'Mediano':'Pequeño'):'Por definir',
+    sl=A.svc.join(', '),ft=A.feat.join(', ')||'Por definir',
+    msg='Hola, quiero cotizar: '+sl+'. Empresa: '+A.size[0]+'. '+(sw?'Funciones: '+ft+'. ':'')+'Punto de partida: '+A.base[0]+'. Para: '+A.when[0]+'. Tamaño estimado: '+sz+'.';
     $('sp').textContent='Resumen';
-    wb.innerHTML='<div class="rs"><h3>Tu cotización está lista</h3><dl><dt>Necesitas</dt><dd>'+A.need[0]+'</dd><dt>Lo usará</dt><dd>'+A.who[0]+'</dd><dt>Funciones</dt><dd>'+ft+'</dd><dt>Para cuándo</dt><dd>'+A.when[0]+'</dd></dl><p>Tamaño estimado: <span class="sz">'+sz+'</span></p><div class="row" style="margin-top:16px"><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/'+WA+'?text='+encodeURIComponent('Hola, quiero cotizar: '+A.need[0]+'. Lo usará: '+A.who[0]+'. Funciones: '+ft+'. Para: '+A.when[0]+'. Tamaño estimado: '+sz+'.')+'">Enviar por WhatsApp</a><a class="btn o" href="#contacto">Usar el formulario</a></div></div>';
+    wb.innerHTML='<div class="rs"><h3>Tu cotización está lista</h3><dl><dt>Servicios</dt><dd>'+sl+'</dd><dt>Empresa</dt><dd>'+A.size[0]+'</dd>'+(sw?'<dt>Funciones</dt><dd>'+ft+'</dd>':'')+'<dt>Punto de partida</dt><dd>'+A.base[0]+'</dd><dt>Para cuándo</dt><dd>'+A.when[0]+'</dd></dl><p>Tamaño estimado: <span class="sz">'+sz+'</span></p><div class="row" style="margin-top:16px"><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'">Enviar por WhatsApp</a><a class="btn o" href="#contacto">Usar el formulario</a></div></div>';
     nt.style.display='none';bk.textContent='Empezar de nuevo';return}
-  nt.style.display='';bk.textContent='‹ Atrás';var q=Q[s];
-  $('sp').textContent='Pregunta '+(s+1)+' de 4'+(q.m?' · Elige todas las que quieras':'');
+  nt.style.display='';bk.textContent='‹ Atrás';var q=L[s];head(L);
   wb.innerHTML='<h3>'+q.t+'</h3><div class="op"></div>';var bx=wb.querySelector('.op');
-  q.o.forEach(function(o){var b=document.createElement('button');b.type='button';b.className='ob'+(A[q.k].indexOf(o[0])>-1?' on':'');b.innerHTML=o[0]+(o[1]?'<small>'+o[1]+'</small>':'');b.setAttribute('aria-pressed',b.classList.contains('on'));
-    b.onclick=function(){var i=A[q.k].indexOf(o[0]);if(q.m){i>-1?A[q.k].splice(i,1):A[q.k].push(o[0])}else{A[q.k]=[o[0]]}mark()};bx.appendChild(b)});
-  nt.disabled=!q.m&&!A[q.k].length;nt.textContent=s===3?'Ver cotización':'Siguiente'}
-function mark(){var q=Q[s];wb.querySelectorAll('.ob').forEach(function(b,i){var on=A[q.k].indexOf(q.o[i][0])>-1;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});nt.disabled=!q.m&&!A[q.k].length}
-nt.onclick=function(){s++;draw()};
-bk.onclick=function(){if(s>=4){A={need:[],who:[],feat:[],when:[]};s=0}else if(s>0){s--}draw()};
+  function add(o){var b=document.createElement('button');b.type='button';b.className='ob'+(A[q.k].indexOf(o[0])>-1?' on':'');b.innerHTML=o[0]+(o[1]?'<small>'+o[1]+'</small>':'');b.setAttribute('aria-pressed',b.classList.contains('on'));
+    b.onclick=function(){var i=A[q.k].indexOf(o[0]);if(q.m){i>-1?A[q.k].splice(i,1):A[q.k].push(o[0])}else{A[q.k]=[o[0]]}mark()};bx.appendChild(b)}
+  if(q.g){q.g.forEach(function(g){var h=document.createElement('p');h.className='gt';h.textContent=g[0];bx.appendChild(h);g[1].forEach(add)})}else{q.o.forEach(add)}
+  nt.disabled=!ok(q);nt.textContent=s===n-1?'Ver cotización':'Siguiente'}
+function mark(){var L=steps(),q=L[s],o=flat(q);head(L);wb.querySelectorAll('.ob').forEach(function(b,i){var on=A[q.k].indexOf(o[i][0])>-1;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});nt.disabled=!ok(q);nt.textContent=s===L.length-1?'Ver cotización':'Siguiente'}
+function up(){var r=wz.getBoundingClientRect();if(r.top<90)window.scrollTo({top:scrollY+r.top-110,behavior:rm?'auto':'smooth'})}
+nt.onclick=function(){s++;draw();up()};
+bk.onclick=function(){if(s>=steps().length){A=fresh();s=0}else if(s>0){s--}draw();up()};
 draw();
+// "Cotizar este servicio" abre el cotizador con ese servicio ya elegido
+$('v-servicio').addEventListener('click',function(e){var a=e.target.closest('[data-svc]');if(!a)return;var x=S.filter(function(v){return v.id===a.dataset.svc})[0];if(x){A=fresh();A.svc=[x.n];s=0;draw()}});
 // formulario → WhatsApp
 $('f').addEventListener('submit',function(e){e.preventDefault();var g=function(i){return $(i).value};window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola, soy '+g('n')+' ('+g('o')+'). Me interesa: '+g('t')+'. '+g('m')+' Contacto: '+g('e')+', '+g('p')),'_blank')});
 // video de la portada (sin sonido)
