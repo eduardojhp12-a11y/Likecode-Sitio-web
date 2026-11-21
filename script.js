@@ -22,12 +22,16 @@ var P=[
 {n:'Tienda en línea y panel administrativo',c:'Comercio y regalos',p:'Los pedidos por redes sociales desorganizaban las ventas y complicaban la caja diaria.',h:['Catálogo con carrito y pagos','Panel de pedidos e inventario','Reportes para administrar el negocio'],r:'Orden total en los pedidos y una tienda abierta las 24 horas.',g:['#be185d','#b45309'],k:'shop'}];
 var T=[
 {initials:'EH',name:'Eduardo Hernandez',linkedin:'https://linkedin.com/in/eduardo-hern%C3%A1ndez-459085263',github:'https://github.com/eduardojhp12-a11y'},
-{placeholder:true},{placeholder:true},{placeholder:true}
+{initials:'DM',name:'Daniel Marin',linkedin:'https://www.linkedin.com/in/danielmarindev',github:'https://github.com/daniel-devfrontend'},
+{placeholder:true},{placeholder:true}
 ];
 var $=function(i){return document.getElementById(i)};
 document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){var q=a.href.indexOf('?');a.href='https://wa.me/'+WA+(q>-1?a.href.slice(q):'')});
 // ubicación de la agencia (mapa de Google): cambia solo esta línea por la dirección real
 var LOC='J98J+X3J, Maracaibo 4001, Zulia, Venezuela';
+var MAIL='Likecode429@gmail.com'; // correo que recibe las cotizaciones y mensajes
+function gmail(su,body){return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(MAIL)+(su?'&su='+encodeURIComponent(su):'')+(body?'&body='+encodeURIComponent(body):'')}
+$('hg').href=gmail('Consulta desde la web');
 (function(){var q=encodeURIComponent(LOC);$('lm').src='https://www.google.com/maps?q='+q+'&output=embed';$('ld').href='https://www.google.com/maps/search/?api=1&query='+q;$('la').textContent=LOC})();
 // tarjetas de servicios
 function card(s,i){return '<a class="sc rv" href="#servicio-'+s.id+'" style="--g1:'+s.g[0]+';--g2:'+s.g[1]+'"><span class="ico">'+sv(s.k)+'</span><em class="nm">'+(i<9?'0':'')+(i+1)+'</em><h3>'+s.n+'</h3><small>'+s.t+'</small><p>'+s.s+'</p><b>Conocer más <i>→</i></b></a>'}
@@ -75,40 +79,62 @@ nv.onclick=function(e){if(e.target.closest('a'))menu(false)};
 scr.onclick=function(){menu(false)};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')menu(false)});
 addEventListener('resize',function(){if(innerWidth>960)menu(false)});
-// cotizador: los pasos cambian según los servicios que elija la persona
-var SN=S.map(function(x){return x.n}),WT=[1,2,3,3,3,1,2,0,0,1,1,1],SWN=SN.slice(0,7);
-var Q=[
-{k:'svc',t:'¿Qué servicios necesitas?',m:1,req:1,h:' · Elige todos los que necesites',g:G.map(function(g){return [g[0],g[2].map(function(i){return [S[i].n,S[i].t]})]}).concat([['¿No sabes por dónde empezar?',[['Quiero asesoría','Te ayudamos a elegir']]]])},
-{k:'size',t:'¿De qué tamaño es tu empresa?',m:0,o:[['Soy independiente','Trabajo por mi cuenta'],['Empresa pequeña','De 2 a 10 personas'],['Empresa mediana','De 11 a 50 personas'],['Empresa grande','Más de 50 personas']]},
-{k:'feat',t:'¿Qué te gustaría que haga?',m:1,h:' · Elige todas las que quieras',only:function(){return !A.svc.length||A.svc.some(function(n){return SWN.indexOf(n)>-1})},o:[['Cobrar en línea',''],['Catálogo de productos',''],['Inventario',''],['Facturas',''],['Citas o reservas',''],['Reportes',''],['Avisos por WhatsApp',''],['Usuarios y permisos',''],['Acceso para mis clientes',''],['Conectar con otros sistemas',''],['Asistente con IA','']]},
-{k:'base',t:'¿Ya tienes algo hecho?',m:0,o:[['No, empiezo desde cero','Es un proyecto nuevo'],['Sí, quiero mejorarlo','Ya tengo página, sistema o equipos'],['Es algo urgente','Necesito ayuda cuanto antes']]},
-{k:'when',t:'¿Para cuándo lo necesitas?',m:0,o:[['Lo antes posible',''],['En uno o dos meses',''],['Lo estoy pensando','']]}];
-function fresh(){return {svc:[],size:[],feat:[],base:[],when:[]}}
+// cotizador: se elige UN servicio y las preguntas siguientes son solo de ese servicio
+var SN=S.map(function(x){return x.n});
+function ops(a){return a.map(function(x){return typeof x==='string'?[x,'']:x})}
+function st(k,l,t,m,o,z){return {k:k,l:l,t:t,m:m,sz:z,h:m?' · Elige todas las que quieras':'',o:ops(o)}}
+var BASE=st('base','Punto de partida','¿Ya tienes algo hecho?',0,[['No, empiezo desde cero','Es un proyecto nuevo'],['Sí, quiero mejorarlo','Ya tengo algo funcionando']]),
+WHEN=st('when','Para cuándo','¿Para cuándo lo necesitas?',0,['Lo antes posible','En uno o dos meses','Lo estoy pensando']),
+URG=st('when','Urgencia','¿Qué tan urgente es?',0,['Hoy mismo','Esta semana','No es urgente']),
+PEOPLE=['1 a 5 personas','6 a 20 personas','21 a 50 personas','Más de 50 personas'];
+// w = peso base del servicio · e = muestra "tamaño estimado" · s = preguntas propias del servicio
+var F={
+'Páginas web':{w:1,e:1,s:[st('type','Tipo de página','¿Qué tipo de página necesitas?',0,[['Página de presentación','Da a conocer tu empresa'],['Página con varias secciones','Inicio, servicios, nosotros y contacto'],['Promoción o producto','Una sola página para vender algo'],['Portafolio o catálogo','Muestra tus trabajos o productos']]),st('incl','Incluye','¿Qué quieres que incluya?',1,['Botón de WhatsApp','Formulario de contacto','Aparecer en Google','Dominio y hosting','Mapa de ubicación','Galería de fotos y videos','Blog o noticias','Varios idiomas']),BASE,WHEN]},
+'Tiendas en línea':{w:2,e:1,s:[st('prod','Productos','¿Cuántos productos venderás?',0,['Menos de 20','Entre 20 y 100','Más de 100'],1),st('incl','Incluye','¿Qué necesita tu tienda?',1,['Pagos en línea','Catálogo con categorías','Inventario','Panel de pedidos y clientes','Avisos de venta por WhatsApp o correo','Cupones y descuentos','Envíos y delivery']),BASE,WHEN]},
+'Desarrollo personalizado':{w:3,e:1,s:[st('incl','Incluye','¿Qué necesita tu sistema?',1,['Usuarios y permisos','Reportes a tu medida','Facturación','Conexión con otros sistemas','Acceso para mis clientes','Capacitación para mi equipo']),st('users','Usuarios','¿Cuántas personas lo usarán?',0,PEOPLE,1),BASE,WHEN]},
+'Sistemas administrativos':{w:3,e:1,s:[st('incl','Qué controlar','¿Qué quieres controlar?',1,['Facturación y cobros','Cuentas por pagar','Inventario','Compras','Clientes (CRM)','Reportes e indicadores']),st('users','Usuarios','¿Cuántas personas lo usarán?',0,PEOPLE,1),st('base','Control actual','¿Cómo llevas el control hoy?',0,['En papel o Excel','Con otro sistema que quiero cambiar','Todavía no llevo control']),WHEN]},
+'Apps móviles':{w:3,e:1,s:[st('plat','Plataforma','¿Para qué celulares?',0,['Android','iPhone (iOS)','Los dos']),st('incl','Incluye','¿Qué debe tener tu app?',1,['Notificaciones','Funcionar sin internet','Conexión con mi sistema web','Pagos dentro de la app','Inicio de sesión de usuarios','Publicación en App Store y Google Play']),BASE,WHEN]},
+'Diseño UI/UX':{w:1,e:1,s:[st('what','Qué diseñar','¿Qué necesitas diseñar?',0,['Una página web','Una app móvil','Un sistema o panel','Rediseñar algo que ya tengo']),st('incl','Incluye','¿Qué necesitas que incluya?',1,['Prototipos navegables','Pruebas con usuarios reales','Identidad y sistema de diseño','Pantallas listas para programar']),WHEN]},
+'Cloud, APIs e IA':{w:2,e:1,s:[st('incl','Incluye','¿Qué necesitas?',1,['Servidores en la nube y copias de seguridad','Conexión con pagos','Conexión con facturación','Conexión con WhatsApp','Asistente con IA para atender clientes','Monitoreo y alertas 24/7']),st('base','Punto de partida','¿Ya tienes sistemas funcionando?',0,[['Sí, quiero conectarlos','Ya uso sistemas o herramientas'],['No, es un proyecto nuevo','Empiezo desde cero']]),WHEN]},
+'Soporte técnico remoto':{w:0,e:0,s:[st('incl','Ayuda con','¿Con qué necesitas ayuda?',1,['Instalar o configurar programas','Eliminar virus y limpiar el sistema','Mis sistemas administrativos','Otro problema con mi equipo']),st('freq','Frecuencia','¿Cómo lo necesitas?',0,[['Una sola vez','Resolver un problema puntual'],['De forma continua','Soporte frecuente para mi empresa']]),URG]},
+'Mantenimiento de equipos':{w:0,e:0,s:[st('incl','Mantenimiento','¿Qué necesitas?',1,['Limpieza interna y cambio de pasta térmica','Formateo y reinstalación del sistema','Reparación o cambio de piezas','Revisión preventiva periódica']),st('eq','Equipos','¿Qué equipos son?',1,['Laptops','Computadoras de escritorio','Impresoras','Servidores']),st('qty','Cantidad','¿Cuántos equipos son?',0,['1 equipo','De 2 a 5','De 6 a 20','Más de 20']),URG]},
+'Redes y equipos':{w:1,e:1,s:[st('incl','Incluye','¿Qué necesita tu oficina?',1,['Cableado y wifi','Configurar computadoras, servidores e impresoras','Protección contra virus y accesos no autorizados','Revisión y mantenimiento periódico']),st('size','Puestos de trabajo','¿Cuántos puestos de trabajo tiene?',0,['1 a 5','6 a 20','21 a 50','Más de 50'],1),st('base','Punto de partida','¿Es una oficina nueva?',0,[['Sí, es nueva','Empezamos la red desde cero'],['No, quiero mejorar la que tengo','Ya tenemos red o equipos']]),WHEN]},
+'Cursos de programación':{w:0,e:0,s:[st('level','Nivel','¿Cuál es tu nivel?',0,[['Nunca he programado','Empiezo desde cero'],['Sé un poco','Ya probé por mi cuenta'],['Quiero llegar a nivel intermedio','Ya tengo bases']]),st('who','Quién estudia','¿Quién va a estudiar?',0,['Solo yo','Un grupo pequeño','Mi equipo de trabajo']),st('sched','Horario','¿Qué horario prefieres?',1,['Mañana','Tarde','Noche','Fines de semana']),st('when','Inicio','¿Cuándo quieres empezar?',0,['Lo antes posible','En uno o dos meses','Lo estoy pensando'])]},
+'Manejo de redes sociales':{w:0,e:0,s:[st('nets','Redes','¿Qué redes quieres manejar?',1,['Instagram','TikTok','Facebook','Otra red']),st('incl','Incluye','¿Qué necesitas?',1,['Plan de contenido mensual','Diseño de publicaciones y videos cortos','Publicación y atención de mensajes','Reporte mensual de resultados']),st('base','Punto de partida','¿Ya tienes redes activas?',0,[['No, empiezo desde cero','Quiero crear mi presencia'],['Sí, quiero mejorarlas','Ya publico pero sin resultados']]),WHEN]},
+'Quiero asesoría':{w:0,e:0,s:[st('topic','Tema','¿Sobre qué quieres asesoría?',0,[['Presencia en internet','Página web o tienda en línea'],['Ordenar mi negocio','Sistemas, apps y automatización'],['Equipos y redes','Soporte, mantenimiento o red de oficina'],['Redes sociales o formación','Contenido, marca o cursos']]),st('size','Empresa','¿De qué tamaño es tu empresa?',0,[['Soy independiente','Trabajo por mi cuenta'],['Empresa pequeña','De 2 a 10 personas'],['Empresa mediana','De 11 a 50 personas'],['Empresa grande','Más de 50 personas']]),WHEN]}
+};
+var SVC={k:'svc',l:'Servicio',t:'¿Qué servicio necesitas?',m:0,h:' · Elige uno',g:G.map(function(g){return [g[0],g[2].map(function(i){return [S[i].n,S[i].t]})]}).concat([['¿No sabes por dónde empezar?',[['Quiero asesoría','Te ayudamos a elegir']]]])};
+function fresh(){return {svc:[]}}
 var A=fresh(),s=0,wb=$('wb'),nt=$('nt'),bk=$('bk'),wz=document.querySelector('.wz');
-function steps(){return Q.filter(function(q){return !q.only||q.only()})}
+function steps(){return A.svc.length?[SVC].concat(F[A.svc[0]].s):[SVC]}
 function flat(q){return q.g?q.g.reduce(function(a,g){return a.concat(g[1])},[]):q.o}
-function ok(q){return (q.m&&!q.req)||A[q.k].length>0}
-function head(L){var q=L[s],n=L.length;$('pg').style.width=Math.min((s+1)/n,1)*100+'%';$('sp').textContent='Pregunta '+(s+1)+' de '+n+(q.m?q.h:'')}
+function got(q){return A[q.k]||[]}
+function ok(q){return got(q).length>0}
+function last(L){return A.svc.length>0&&s===L.length-1}
+function head(L){var q=L[s],n=A.svc.length?L.length:5;$('pg').style.width=Math.min((s+1)/n,1)*100+'%';$('sp').textContent='Pregunta '+(s+1)+(A.svc.length?' de '+L.length:'')+(q.h||'')}
 function draw(){
   var L=steps(),n=L.length;
   $('pg').style.width=Math.min((s+1)/n,1)*100+'%';
   bk.style.visibility=s===0?'hidden':'';
   if(s>=n){
-    var sw=L.some(function(q){return q.k==='feat'}),
-    sc=A.svc.reduce(function(a,x){var i=SN.indexOf(x);return a+(i>-1?WT[i]:0)},0)+({'Empresa mediana':1,'Empresa grande':2}[A.size[0]]||0)+(sw?(A.feat.length>5?2:A.feat.length>2?1:0):0),
-    sz=A.svc.some(function(x){return SN.indexOf(x)>-1})?(sc>=7?'Grande':sc>=3?'Mediano':'Pequeño'):'Por definir',
-    sl=A.svc.join(', '),ft=A.feat.join(', ')||'Por definir',
-    msg='Hola, quiero cotizar: '+sl+'. Empresa: '+A.size[0]+'. '+(sw?'Funciones: '+ft+'. ':'')+'Punto de partida: '+A.base[0]+'. Para: '+A.when[0]+'. Tamaño estimado: '+sz+'.';
+    var f=F[A.svc[0]],rows=[[SVC.l,A.svc[0]]].concat(L.slice(1).map(function(q){return [q.l,got(q).join(', ')]})),sc=f.w,pk=0;
+    L.slice(1).forEach(function(q){var g=got(q);if(q.sz)sc+=Math.round(q.o.map(function(x){return x[0]}).indexOf(g[0])*2/(q.o.length-1));else if(q.m)pk+=g.length});
+    sc+=pk>5?2:pk>2?1:0;
+    var sz=f.e?(sc>=7?'Grande':sc>=3?'Mediano':'Pequeño'):'',
+    msg=(A.svc[0]==='Quiero asesoría'?'Hola, quiero pedir asesoría. ':'Hola, quiero cotizar: '+A.svc[0]+'. ')+rows.slice(1).map(function(r){return r[0]+': '+r[1]}).join('. ')+'.'+(sz?' Tamaño estimado: '+sz+'.':'');
+    var intro=A.svc[0]==='Quiero asesoría'?'Hola, quiero pedir asesoría.':'Hola, quiero cotizar el servicio de '+A.svc[0]+'.',
+    body=intro+'\n\n'+rows.slice(1).map(function(r){return r[0]+': '+r[1]}).join('\n')+(sz?'\n\nTamaño estimado: '+sz:'')+'\n\nQuedo atento a su respuesta. Gracias.',
+    gm=gmail(A.svc[0]==='Quiero asesoría'?'Solicitud de asesoría':'Cotización: '+A.svc[0],body);
     $('sp').textContent='Resumen';
-    wb.innerHTML='<div class="rs"><h3>Tu cotización está lista</h3><dl><dt>Servicios</dt><dd>'+sl+'</dd><dt>Empresa</dt><dd>'+A.size[0]+'</dd>'+(sw?'<dt>Funciones</dt><dd>'+ft+'</dd>':'')+'<dt>Punto de partida</dt><dd>'+A.base[0]+'</dd><dt>Para cuándo</dt><dd>'+A.when[0]+'</dd></dl><p>Tamaño estimado: <span class="sz">'+sz+'</span></p><div class="row" style="margin-top:16px"><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'">Enviar por WhatsApp</a><a class="btn o" href="#contacto">Usar el formulario</a></div></div>';
+    wb.innerHTML='<div class="rs"><h3>Tu cotización está lista</h3><dl>'+rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>'}).join('')+'</dl>'+(sz?'<p>Tamaño estimado: <span class="sz">'+sz+'</span></p>':'')+'<div class="row" style="margin-top:16px"><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'">Enviar por WhatsApp</a><a class="btn c" target="_blank" rel="noopener" href="'+gm+'">Enviar por Gmail</a><a class="btn o" href="#contacto">Usar el formulario</a></div></div>';
     nt.style.display='none';bk.textContent='Empezar de nuevo';return}
   nt.style.display='';bk.textContent='‹ Atrás';var q=L[s];head(L);
   wb.innerHTML='<h3>'+q.t+'</h3><div class="op"></div>';var bx=wb.querySelector('.op');
-  function add(o){var b=document.createElement('button');b.type='button';b.className='ob'+(A[q.k].indexOf(o[0])>-1?' on':'');b.innerHTML=o[0]+(o[1]?'<small>'+o[1]+'</small>':'');b.setAttribute('aria-pressed',b.classList.contains('on'));
-    b.onclick=function(){var i=A[q.k].indexOf(o[0]);if(q.m){i>-1?A[q.k].splice(i,1):A[q.k].push(o[0])}else{A[q.k]=[o[0]]}mark()};bx.appendChild(b)}
+  function add(o){var b=document.createElement('button');b.type='button';b.className='ob'+(got(q).indexOf(o[0])>-1?' on':'');b.innerHTML=o[0]+(o[1]?'<small>'+o[1]+'</small>':'');b.setAttribute('aria-pressed',b.classList.contains('on'));
+    b.onclick=function(){var g=got(q).slice(),i=g.indexOf(o[0]);if(q.m){i>-1?g.splice(i,1):g.push(o[0]);A[q.k]=g}else{if(q.k==='svc'&&A.svc[0]!==o[0])A=fresh();A[q.k]=[o[0]]}mark()};bx.appendChild(b)}
   if(q.g){q.g.forEach(function(g){var h=document.createElement('p');h.className='gt';h.textContent=g[0];bx.appendChild(h);g[1].forEach(add)})}else{q.o.forEach(add)}
-  nt.disabled=!ok(q);nt.textContent=s===n-1?'Ver cotización':'Siguiente'}
-function mark(){var L=steps(),q=L[s],o=flat(q);head(L);wb.querySelectorAll('.ob').forEach(function(b,i){var on=A[q.k].indexOf(o[i][0])>-1;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});nt.disabled=!ok(q);nt.textContent=s===L.length-1?'Ver cotización':'Siguiente'}
+  nt.disabled=!ok(q);nt.textContent=last(L)?'Ver cotización':'Siguiente'}
+function mark(){var L=steps(),q=L[s],o=flat(q);head(L);wb.querySelectorAll('.ob').forEach(function(b,i){var on=got(q).indexOf(o[i][0])>-1;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});nt.disabled=!ok(q);nt.textContent=last(L)?'Ver cotización':'Siguiente'}
 function up(){var r=wz.getBoundingClientRect();if(r.top<90)window.scrollTo({top:scrollY+r.top-110,behavior:rm?'auto':'smooth'})}
 nt.onclick=function(){s++;draw();up()};
 bk.onclick=function(){if(s>=steps().length){A=fresh();s=0}else if(s>0){s--}draw();up()};
@@ -117,6 +143,8 @@ draw();
 $('v-servicio').addEventListener('click',function(e){var a=e.target.closest('[data-svc]');if(!a)return;var x=S.filter(function(v){return v.id===a.dataset.svc})[0];if(x){A=fresh();A.svc=[x.n];s=0;draw()}});
 // formulario → WhatsApp
 $('f').addEventListener('submit',function(e){e.preventDefault();var g=function(i){return $(i).value};window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola, soy '+g('n')+' ('+g('o')+'). Me interesa: '+g('t')+'. '+g('m')+' Contacto: '+g('e')+', '+g('p')),'_blank')});
+// formulario → Gmail
+$('fg').addEventListener('click',function(){if(!$('f').reportValidity())return;var g=function(i){return $(i).value};window.open(gmail('Contacto: '+g('t'),'Hola, soy '+g('n')+' ('+g('o')+').\n\nMe interesa: '+g('t')+'\n\n'+g('m')+'\n\nMis datos de contacto:\nCorreo: '+g('e')+'\nTeléfono: '+g('p')),'_blank','noopener')});
 // video de la portada (sin sonido)
 var hv=$('hv');
 if(hv&&rm){hv.removeAttribute('autoplay');hv.pause()}
